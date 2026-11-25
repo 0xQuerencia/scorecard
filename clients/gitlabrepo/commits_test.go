@@ -17,6 +17,7 @@ package gitlabrepo
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
@@ -130,6 +131,51 @@ func TestListRawCommits(t *testing.T) {
 			}
 			if !cmp.Equal(len(commits), tt.want) {
 				t.Errorf("listCommits() = %v, want %v", len(commits), cmp.Diff(len(commits), tt.want))
+			}
+		})
+	}
+}
+
+func TestZipMergeRequestHeadSHA(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		mergeCommitSHA string
+		commitSHA      string
+	}{
+		{name: "merge commit", mergeCommitSHA: "merge", commitSHA: "merge"},
+		{name: "fast-forward merge", commitSHA: "head"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			data := graphqlData{}
+			mr := graphqlMergeRequestNode{
+				IID:            "1",
+				MergeCommitSHA: tt.mergeCommitSHA,
+				DiffHeadSHA:    "head",
+			}
+			mr.Commits.Nodes = append(mr.Commits.Nodes, struct {
+				SHA string `graphql:"sha"`
+			}{SHA: "head"})
+			data.Project.MergeRequests.Nodes = []graphqlMergeRequestNode{mr}
+
+			now := time.Now()
+			handler := &commitsHandler{}
+			commits := handler.zip([]*gitlab.Commit{
+				{ID: tt.commitSHA, CommittedDate: &now},
+			}, data)
+
+			if len(commits) != 1 {
+				t.Fatalf("got %d commits, want 1", len(commits))
+			}
+			associated := commits[0].AssociatedMergeRequest
+			if associated.Number != 1 || associated.HeadSHA != "head" {
+				t.Errorf("got MR #%d with head %q, want MR #1 with head %q",
+					associated.Number, associated.HeadSHA, "head")
 			}
 		})
 	}

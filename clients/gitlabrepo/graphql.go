@@ -99,6 +99,7 @@ type graphqlMergeRequestNode struct {
 		} `graphql:"nodes"`
 	} `graphql:"approvedBy"`
 	MergeCommitSHA string `graphql:"mergeCommitSha"`
+	DiffHeadSHA     string `graphql:"diffHeadSha"`
 	// Labels         struct {
 	// 	Nodes []struct {
 	// 		Title string `graphql:"title"`

@@ -164,7 +164,7 @@ func (handler *commitsHandler) zip(commitsRaw []*gitlab.Commit, data graphqlData
 		iidToMr[mr.IID] = clients.PullRequest{
 			Number:   mrno,
 			MergedAt: mr.MergedAt,
-			HeadSHA:  mr.MergeCommitSHA,
+			HeadSHA:  mr.DiffHeadSHA,
 			Author:   clients.User{Login: mr.Author.Username, ID: int64(mr.Author.ID.ID)},
 			Reviews:  vals,
 			MergedBy: clients.User{Login: mr.MergedBy.Username, ID: int64(mr.MergedBy.ID.ID)},
